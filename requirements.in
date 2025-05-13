@@ -1,0 +1,43 @@
+openai
+python-dotenv
+fastapi
+uvicorn
+pandas
+pydantic
+pyyaml
+python-json-logger
+hydra-core
+langchain
+langchain_experimental
+pymongo
+chromadb
+pydantic
+pydantic-settings
+pydantic-ai==0.0.52
+pydantic-ai[logfire]
+google-auth
+google-auth-oauthlib 
+google-auth-httplib2
+google-api-python-client
+tiktoken
+pypdf
+openpyxl
+rank-bm25
+nltk
+motor
+vaderSentiment
+ragas
+deepeval==2.8.8
+pytest
+langchain-groq
+crawl4ai
+pillow==10.4.0
+dspy
+numpy<2.0
+torch
+sentence-transformers
+gradio==5.29.0
+twilio
+# bm25s 
+# pystemmer
+# jax[cpu]

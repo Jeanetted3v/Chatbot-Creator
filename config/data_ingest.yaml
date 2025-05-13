@@ -1,0 +1,62 @@
+llm:
+  provider: OpenAI
+  model: gpt-4o-mini
+  embedding_model: text-embedding-3-small
+
+gdrive:
+  credentials_path: ./credentials/fogg-447610-5249b63197be.json
+
+# gdrive_doc:
+#   - file_id: 11pL99aBsV_SmLOv67LdMmDkE9SiExWrrB9wzP2cPfUE
+#     file_type: sheets
+#   - file_id: 1Z5ovVwlVu9ZUgeAUorTPkzBIcjm72YeR2m3SY3ktiKU
+#     file_type: docs
+
+local_doc:
+  paths:
+    - path: ./data/data_to_ingest/syn_data.xlsx
+    - path: ./data/data_to_ingest/rag_qna.pdf
+    - path: ./data/data_to_ingest/translated_crawl.txt
+  csv_dir: ./data/csv
+  rows_threshold: 2  # Default is 50, Set low for testing RAG
+
+
+chunker:
+  token_threshold: 10  # switch between RAG and long-context, set low for testing RAG
+  strategy: "semantic"  # Chunking strategy selection. Options: "recursive" or "semantic"
+  embedding_model: text-embedding-3-small
+  recursive:
+    chunk_size: 300   # character count
+    chunk_overlap: 100  # character overlap
+  semantic:
+    buffer_size: 1  # contextual buffer for semantic chunking
+    breakpoint_threshold_type: percentile  #Options: 'percentile', 'standard_deviation', 'interquartile', 'gradient' 
+    breakpoint_threshold_amount: 50.0  # Bigger the number, the smaller the chunks
+    min_chunk_size: 200
+# Alternative configuration for recursive chunking:
+# chunker:
+#   token_threshold: 10
+#   strategy: "recursive"
+#   chunk_size: 300
+#   chunk_overlap: 100
+
+embedder:
+  similarity_metric: cosine  # cosine(default), L2, ip(Inner Product)
+  persist_dir: ./data/embeddings
+  collection: syn_data
+  vector_store: chromadb
+  embedding_model: text-embedding-3-small
+
+crawler:
+  crawl_data_dir: ./data/crawl
+  raw_crawled_file_name: raw_crawl.md
+  cleaned_file_name: website_crawl.txt
+  extracted_crawled_file_name: extracted_crawl.txt
+  translated_crawled_file_name: translated_crawl.txt
+  data_ingest_dir: ./data/data_to_ingest
+  llm: "openai:gpt-4.1-mini"
+
+defaults:
+  - _self_
+  - extract_metadata
+  - crawler_prompts

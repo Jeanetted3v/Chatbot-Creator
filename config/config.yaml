@@ -1,0 +1,106 @@
+csv_path: ./data/excel_syn_data.csv
+
+hybrid_retriever:
+  persist_dir: ./data/embeddings
+  collection: syn_data
+  semantic_weight: 0.7
+  keyword_weight: 0.3
+  top_k: 10
+  reranker_top_k: 2
+  use_reranker: true
+  reranker_model: cross-encoder/mmarco-mMiniLMv2-L12-H384-v1  # multilingual
+
+
+mongodb:
+  db_name: syn_db  # Database name in MongoDB
+  chat_history_collection: chat_history
+  session_collection: sessions
+  timeout_hours: 0.1
+
+# for general usage (sentiment analysis, etc.) in llm_instance
+llm:
+  provider: OpenAI
+  model: gpt-4.1-mini
+  embedding_model: text-embedding-3-small
+
+
+reasoning:
+  provider: azure_async  # openai, openai_async, azure, azure_async, google-gla, anthropic
+  model_name: gpt-4o-mini # gpt-4o, claude-3-5-sonnet-latest, gemini-2.0-flash, etc
+  api_version: 2024-09-01-preview # for AzureOpenAI
+response: 
+  provider: azure_async  # openai, openai_async, azure, azure_async, google-gla, anthropic
+  model_name: gpt-4o-mini # gpt-4o, claude-3-5-sonnet-latest, gemini-2.0-flash, etc
+  api_version: 2024-09-01-preview  # for AzureOpenAI
+  # or just llm model names: https://ai.pydantic.dev/api/models/base/#pydantic_ai.models.KnownModelName 
+query_handler:  
+  reasoning_model: "openai:gpt-4.1-mini"          # "groq:deepseek-r1-distill-qwen-32b"
+  handle_query_model: "openai:gpt-4.1-mini"  
+
+human_agent:
+  sentiment_threshold: 0.4
+  confidence_threshold: 0.7
+
+msg_analyzer:
+  analysis_interval: 5
+  min_message_length: 50  # set to a higher value during dev stage
+  trigger_patterns:
+    urgency: '\b(urgent|asap|emergency|immediately)\b'
+    frustration: '\b(frustrated?|annoyed|angry|upset)\b'
+    complaint: '\b(terrible|horrible|awful|worst|bad|poor)\b'
+    escalation: '\b(supervisor|manager|complaint|escalate)\b'
+
+sentiment_analyzer:
+  provider: vader
+  llm_validate_threshold: 0.3  # If using LLM validation
+  use_llm_validation: false
+  default_score: 0.7
+
+local_doc:
+  paths:
+    - path: ./data/data_to_ingest/syn_data.xlsx
+    - path: ./data/data_to_ingest/rag_qna.pdf
+    - path: ./data/data_to_ingest/translated_crawl.txt
+  csv_dir: ./data/csv
+  rows_threshold: 2 
+
+simulator:
+  enabled: True
+  simulator_llm: "openai:gpt-4.1-mini"   # either include the provide:model_name format or use the format llm below
+  max_exchange_limit: 5
+  num_simulations: 2
+  output_dir: ./data/simulations
+  first_query: "I would like to make an inquiry"
+  chatbot_llm:
+    provider: openai_async  # openai, openai_async, azure, azure_async, google-gla, anthropic
+    model_name: gpt-4.1-mini # gpt-4o, claude-3-5-sonnet-latest, gemini-2.0-flash, etc
+  user_llm:
+    provider: openai_async
+    model_name: gpt-4.1-mini
+  gt_llm:
+    provider: openai_async
+    model_name: gpt-4.1-mini
+
+guardrails:
+  competitors:   # example competitors to be filtered out
+    - ABC education 
+    - MindChamp
+
+api:
+  reload: False
+
+defaults:
+  - _self_ 
+  - sentiment_analyzer_prompts
+  - human_agent_prompts
+  - query_handler_prompts
+  - simulator_prompts
+  - llm_gt_prompts
+  - creator
+  - input_doc_agent_prompts
+  - prompt_creator_prompts
+  - reasoning_agent_template
+  - reasoning_creator_prompts
+  - prompt_validator_prompts 
+  - prompt_optimizer_prompts 
+

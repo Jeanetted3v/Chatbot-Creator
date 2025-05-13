@@ -1,0 +1,65 @@
+mongodb:
+  db_name: syn_db  # Database name in MongoDB
+  chat_history_collection: chat_history
+  session_collection: sessions
+  timeout_hours: 0.1
+
+local_doc:
+  paths:
+    - path: ./data/data_to_ingest/syn_data.xlsx
+    - path: ./data/data_to_ingest/rag_qna.pdf
+  csv_dir: ./data/csv
+  rows_threshold: 2 
+
+
+session_chat_limit: 100
+session_customer_chat_limit: 100
+ragas_base_dir: ./data/eval/ragas
+deepeval_base_dir: ./data/eval/deepeval
+convo_csv_dir: ./data/convo/
+
+
+save_results: True
+session_ids:
+  - session_ede3a5fb-96a4-4647-a48d-ecfef955c07d
+
+chatbot_role: "You are an education consultant chatbot helping parents find courses and
+    answering education questions."
+llm:
+  provider: azure  # Options: currently only supports azure, groq
+  params:
+    groq:
+      model_name: llama3-70b-8192
+    azure:
+      azure_deployment: gpt-4o
+      api_version: 2024-09-01-preview
+# DeepEval metrics configuration
+metrics:
+  verbose_mode: True
+  log_reasons: True
+  model: 
+  role_adherence:
+    enabled: True
+    threshold: 0.5
+  knowledge_retention:
+    enabled: True
+    threshold: 0.5
+  conversational_completeness:
+    enabled: True
+    threshold: 0.5
+  conversational_relevancy:
+    enabled: True
+    threshold: 0.5
+  # Custom G-Eval for accuracy
+  convo_geval_accuracy:
+    enabled: True
+    threshold: 0.5
+    criteria: |
+      "Given the 'actual output' are generated responses from an LLM chatbot, 
+      'input' are user queries to the chatbot, 'expected output" is the ground
+      truth, determine whether the chatbot has answered the customer's inquiry
+      accurately throughout a conversation."
+
+defaults:
+  - _self_
+  - llm_gt_prompts

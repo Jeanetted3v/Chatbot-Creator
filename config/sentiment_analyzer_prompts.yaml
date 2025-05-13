@@ -1,0 +1,8 @@
+sentiment_analyzer_prompts:
+  sys_prompt: |
+    You are a sentiment analysis validator. Return ONLY a single float number
+    between 0 and 1. DO NOT output any other information.
+  user_prompt: |
+    Analyze the sentiment of this text and provide a score between 
+    0 (extremely negative) and 1 (extremely positive):
+    Text: "{text}

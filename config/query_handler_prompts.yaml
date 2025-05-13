@@ -1,0 +1,7 @@
+query_handler_prompts:
+  reasoning_agent:
+    sys_prompt: |
+    user_prompt: |
+  response_agent:
+    sys_prompt: |
+    user_prompt: |

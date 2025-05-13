@@ -1,0 +1,34 @@
+creator:
+  mode: create   # optimize or create
+  input_doc_agent:
+    provider: azure_async
+    model_name: gpt-4o-mini
+    # api_version: 2025-04-14
+    temperature: 0.2
+  
+  # file directories
+  data_ingest_dir: ./data/data_to_ingest
+  simulator_prompts_filepath: ./config/simulator_prompts.yaml
+  chatbot_prompts_filepath: ./config/query_handler_prompts.yaml
+  # LLM models for different agents
+  
+  prompt_creator:
+    provider: azure_async
+    model_name: gpt-4o-mini
+    # api_version: 2025-04-14
+    temperature: 0.2
+  reasoning_creator:
+    provider: azure_async
+    model_name: gpt-4o-mini
+    # api_version: 2025-04-14
+    temperature: 0.2
+  prompt_validator:
+    provider: azure_async
+    model_name: gpt-4o-mini
+    # api_version: 2025-04-14
+    temperature: 0.2
+  prompt_optimizer:
+    provider: azure_async
+    model_name: gpt-4o-mini
+    # api_version: 2025-04-14
+    temperature: 0.2

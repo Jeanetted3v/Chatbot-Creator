@@ -1,0 +1,35 @@
+name: edu_chatbot
+
+services:
+  backend:
+    build:
+      context: .  # all files in the current directory are available for build
+      dockerfile: dockerfiles/backend.Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data 
+    restart: unless-stopped
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: dockerfiles/frontend.Dockerfile
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

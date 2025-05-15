@@ -1,14 +1,18 @@
 from typing import List, Dict
 import json
-import os
+import logging
 from pydantic import BaseModel
 import chromadb
+from chromadb.errors import NotFoundError
+from fastapi import HTTPException
 from chromadb.config import Settings
 import chromadb.utils.embedding_functions as embedding_functions
 from rank_bm25 import BM25Okapi
 from sentence_transformers import CrossEncoder
 import torch
 from utils.settings import SETTINGS
+
+logger = logging.getLogger(__name__)
 
 
 class SearchMetadata(BaseModel):
@@ -24,27 +28,39 @@ class SearchResult(BaseModel):
 
 
 class HybridRetriever:
-    def __init__(self, cfg: Dict):
+    def __init__(
+        self, cfg: Dict, chroma_host: str = "localhost", chroma_port: int = 8000
+    ):
         self.cfg = cfg
-        data_dir = SETTINGS.DATA_DIR
-        persist_dir = os.path.join(data_dir, "embeddings")
-        self.client = chromadb.PersistentClient(
-            path=persist_dir,
+        self.client = chromadb.HttpClient(
+            host=chroma_host,
+            port=chroma_port,
             settings=Settings(anonymized_telemetry=False)
         )
         self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
             api_key=SETTINGS.OPENAI_API_KEY,
             model_name=self.cfg.llm.embedding_model
         )
-        self.collection = self.client.get_collection(
-            name=self.cfg.hybrid_retriever.collection,
-            embedding_function=self.embedding_function
-        )
+        self.collection = self.get_collection(
+            self.cfg.hybrid_retriever.collection)
         if cfg.hybrid_retriever.use_reranker:
             self.reranker = CrossEncoder(cfg.hybrid_retriever.reranker_model)
         else:
             self.reranker = None
-        
+
+    def get_collection(self, name: str):
+        try:
+            return self.client.get_collection(
+                name=name,
+                embedding_function=self.embedding_function
+            )
+        except NotFoundError:
+            logger.warning(f"ChromaDB collection '{name}' not found.")
+            raise HTTPException(
+                status_code=404,
+                detail=f"Collection '{name}' not found. Upload documents first."
+            )
+
     def _normalize_scores(self, scores: List[float]) -> List[float]:
         """Min-max normalization of scores"""
         if not scores:

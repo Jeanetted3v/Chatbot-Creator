@@ -15,12 +15,12 @@ logger = logging.getLogger(__name__)
 
 
 class Embedder:
-    def __init__(self, cfg, persist_directory: str):
-        data_dir = SETTINGS.DATA_DIR
-        persist_dir = os.path.join(data_dir, "embeddings")
-        os.makedirs(persist_dir, exist_ok=True)
-        self.client = chromadb.PersistentClient(
-            path=persist_directory,
+    def __init__(
+        self, cfg, chroma_host: str = "localhost", chroma_port: int = 8000
+    ):
+        self.client = chromadb.HttpClient(
+            host=chroma_host,
+            port=chroma_port,
             settings=Settings(anonymized_telemetry=False)
         )
         self.collection = None
@@ -121,7 +121,7 @@ class Embedder:
 
 async def embed_doc(cfg: DictConfig, chunked_docs: List[Dict]) -> None:
     logger.info("Starting document embedding process...")
-    embedder = Embedder(cfg, cfg.embedder.persist_dir)
+    embedder = Embedder(cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT)
     embedding_fn = embedder._create_embedding_function(
         provider=cfg.llm.provider,
         model_name=cfg.llm.embedding_model,

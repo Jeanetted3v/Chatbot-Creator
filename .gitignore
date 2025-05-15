@@ -22,6 +22,7 @@ venv/
 # data 
 data/*
 !data/.gitkeep
+chroma_store/
 
 !.gitignore
 

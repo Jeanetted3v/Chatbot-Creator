@@ -1,3 +1,4 @@
+data_dir: ./data
 csv_path: ./data/excel_syn_data.csv
 
 hybrid_retriever:

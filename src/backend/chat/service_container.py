@@ -44,7 +44,9 @@ class ServiceContainer:
             self.sessions_collection = self.db[
                 self.cfg.mongodb.session_collection
             ]
-            self.hybrid_retriever = HybridRetriever(self.cfg)
+            self.hybrid_retriever = HybridRetriever(
+                self.cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT
+            )
             self.sentiment_analyzer = SentimentAnalyzer(self.cfg)
             self.message_analyzer = MessageAnalyzer(self)
             self.human_handler = HumanAgentHandler(self)

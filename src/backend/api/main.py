@@ -1,4 +1,4 @@
-"""To test run: python -m src.backend.api.main
+"""To test run: python -m src.backend.api.main_data_ingest
 Interact via SwaggerUi: http://localhost:8000/chat/docs
 """
 
@@ -39,7 +39,7 @@ async def lifespan(app: FastAPI):
         yield
         print("==== AFTER YIELD ====") 
         # Shutdown code
-        app.state.startup_complete = False 
+        app.state.startup_complete = False
         if hasattr(app.state, "service_container"):
             await app.state.service_container.cleanup()
             logger.info("Service container cleaned up")
@@ -58,7 +58,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],   # change to ORIGINS in production
+    allow_origins=ORIGINS,   # change to ORIGINS in production
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -93,7 +93,7 @@ def main() -> None:
         "src.backend.api.main:app",
         host="0.0.0.0",
         port=8000,
-        reload=cfg.api.reload,
+        reload=cfg.api.reload if hasattr(cfg.api, "reload") else False,
     )
 
 

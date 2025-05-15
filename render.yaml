@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: edu-backend
+    name: chat-pipeline
     env: python
     buildCommand: pip install -r requirements.txt
     startCommand: python -m src.backend.api.main
@@ -8,12 +8,25 @@ services:
     envVars:
       - key: PYTHONPATH
         value: /app
-      - key: CHROMA_PATH
-        value: /mnt/data/embeddings 
-    disk:
-      name: chromadb
-      mountPath: /mnt/data
-      sizeGB: 1
+        
+  - type: web
+    name: data-ingest-pipeline
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m src.backend.api.main_data_ingest
+    rootDir: .
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+
+  - type: web
+    name: chroma-server
+    env: docker
+    region: oregon
+    plan: starter
+    buildCommand: ""
+    dockerfilePath: chroma-server/Dockerfile
+    healthCheckPath: /
 
   - type: web
     name: edu-frontend

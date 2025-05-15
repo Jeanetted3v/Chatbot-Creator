@@ -785,12 +785,6 @@ with gr.Blocks(
         outputs=[screen5]
     )
 
-    # Test button handler
-    debug_btn.click(
-        lambda: [["Test message", "This is a test response that should appear in the chat."]], 
-        outputs=[chat_history]
-    )
-
     # Handle specific transitions that need additional actions
     current_screen.change(
         lambda x: process_all_feedback() if x == 4 else (None, None, None),
@@ -806,4 +800,4 @@ with gr.Blocks(
 
 
 # Launch the app
-demo.launch()
+demo.launch(server_name="0.0.0.0", server_port=8080)

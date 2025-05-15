@@ -40,6 +40,11 @@ chunker:
 #   chunk_size: 300
 #   chunk_overlap: 100
 
+weaviate:
+  embedding_provider: azure
+  cloud: true
+  recreate_collection: true
+
 embedder:
   similarity_metric: cosine  # cosine(default), L2, ip(Inner Product)
   persist_dir: ./data/embeddings

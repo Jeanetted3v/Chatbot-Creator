@@ -1,5 +1,6 @@
-from typing import List, Dict, Any
+from typing import List, Dict
 import json
+import os
 from pydantic import BaseModel
 import chromadb
 from chromadb.config import Settings
@@ -25,8 +26,10 @@ class SearchResult(BaseModel):
 class HybridRetriever:
     def __init__(self, cfg: Dict):
         self.cfg = cfg
+        data_dir = SETTINGS.DATA_DIR
+        persist_dir = os.path.join(data_dir, "embeddings")
         self.client = chromadb.PersistentClient(
-            path=self.cfg.hybrid_retriever.persist_dir,
+            path=persist_dir,
             settings=Settings(anonymized_telemetry=False)
         )
         self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(

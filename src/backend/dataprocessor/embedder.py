@@ -16,7 +16,9 @@ logger = logging.getLogger(__name__)
 
 class Embedder:
     def __init__(self, cfg, persist_directory: str):
-        os.makedirs(persist_directory, exist_ok=True)
+        data_dir = SETTINGS.DATA_DIR
+        persist_dir = os.path.join(data_dir, "embeddings")
+        os.makedirs(persist_dir, exist_ok=True)
         self.client = chromadb.PersistentClient(
             path=persist_directory,
             settings=Settings(anonymized_telemetry=False)

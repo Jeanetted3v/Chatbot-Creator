@@ -38,6 +38,7 @@ torch
 sentence-transformers
 gradio==5.29.0
 twilio
+weaviate-client
 # bm25s 
 # pystemmer
 # jax[cpu]

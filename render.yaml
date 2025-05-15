@@ -1,0 +1,34 @@
+services:
+  - type: web
+    name: edu-backend
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m src.backend.api.main
+    rootDir: .
+    envVars:
+      - key: PYTHONPATH
+        value: /app
+      - key: CHROMA_PATH
+        value: /mnt/data/embeddings 
+    disk:
+      name: chromadb
+      mountPath: /mnt/data
+      sizeGB: 1
+
+  - type: web
+    name: edu-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: src/frontend/build
+    rootDir: src/frontend
+
+  # - type: web
+  #   name: gradio-tool-ui
+  #   env: python
+  #   buildCommand: pip install -r requirements.txt
+  #   startCommand: python -m src.creator.app
+  #   rootDir: .
+  #   disk:
+  #     name: chromadb
+  #     mountPath: /mnt/data/embeddings
+  #     sizeGB: 1

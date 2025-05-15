@@ -25,12 +25,6 @@ data/*
 
 !.gitignore
 
-# evaluations
-evaluations/*
-!evaluations/ragas_reports/.gitkeep
-
-# Ignore requirements.txt file 
-requirements.txt
 
 # Keep all .gitkeep files
 !.gitkeep

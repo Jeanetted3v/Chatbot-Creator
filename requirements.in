@@ -10,7 +10,8 @@ hydra-core
 langchain
 langchain_experimental
 pymongo
-chromadb
+# chromadb>=1.0.7
+chromadb-client>=1.0.7
 pydantic
 pydantic-settings
 pydantic-ai==0.0.52
@@ -38,7 +39,7 @@ torch
 sentence-transformers
 gradio==5.29.0
 twilio
-weaviate-client
+# weaviate-client
 # bm25s 
 # pystemmer
 # jax[cpu]

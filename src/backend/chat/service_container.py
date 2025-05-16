@@ -44,7 +44,7 @@ class ServiceContainer:
             self.sessions_collection = self.db[
                 self.cfg.mongodb.session_collection
             ]
-            self.hybrid_retriever = HybridRetriever(
+            self.hybrid_retriever = await HybridRetriever.create_chromadb_client(
                 self.cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT
             )
             self.sentiment_analyzer = SentimentAnalyzer(self.cfg)

@@ -28,29 +28,38 @@ class SearchResult(BaseModel):
 
 
 class HybridRetriever:
-    def __init__(
-        self, cfg: Dict, chroma_host: str = "localhost", chroma_port: int = 8000
-    ):
+    def __init__(self, cfg: Dict, client):
         self.cfg = cfg
-        self.client = chromadb.HttpClient(
-            host=chroma_host,
-            port=chroma_port,
-            settings=Settings(anonymized_telemetry=False)
-        )
+        self.client = client
         self.embedding_function = embedding_functions.OpenAIEmbeddingFunction(
             api_key=SETTINGS.OPENAI_API_KEY,
             model_name=self.cfg.llm.embedding_model
         )
-        self.collection = self.get_collection(
-            self.cfg.hybrid_retriever.collection)
+        self.collection = None
         if cfg.hybrid_retriever.use_reranker:
             self.reranker = CrossEncoder(cfg.hybrid_retriever.reranker_model)
         else:
             self.reranker = None
 
-    def get_collection(self, name: str):
+    @classmethod
+    async def create_chromadb_client(
+        cls, cfg, chroma_host="localhost", chroma_port=8000
+    ):
+        client = await chromadb.AsyncHttpClient(
+            host=chroma_host,
+            port=chroma_port,
+            settings=Settings(anonymized_telemetry=False)
+        )
+        instance = cls(cfg, client)
+        instance.collection = await instance.get_collection(
+            cfg.hybrid_retriever.collection
+        )
+        logger.info(f"ChromaDB collection '{cfg.hybrid_retriever.collection}' initialized.")
+        return instance
+
+    async def get_collection(self, name: str):
         try:
-            return self.client.get_collection(
+            return await self.client.get_collection(
                 name=name,
                 embedding_function=self.embedding_function
             )
@@ -78,10 +87,10 @@ class HybridRetriever:
     ) -> List[float]:
         """Get BM25 scores for keyword matching
         
-        BM25 calculates a score based on Term Frequency 
+        BM25 calculates a score based on Term Frequency
         (how often words appear in the document), normalized longer documents,
-        inverses document frequency (how common words are across documents). 
-        Similar to TD-IDF + length normilization, etc. 
+        inverses document frequency (how common words are across documents).
+        Similar to TD-IDF + length normilization, etc.
         """
         # Tokenize documents
         tokenized_docs = [doc.lower().split() for doc in documents]
@@ -126,12 +135,13 @@ class HybridRetriever:
             filter_conditions: Optional filters for metadata fields
         """
         # Get semantic search results with scores
-        results = self.collection.query(
+        results = await self.collection.query(
             query_texts=[query],
             n_results=self.cfg.hybrid_retriever.top_k,
             where=filter_conditions,
             include=['documents', 'metadatas', 'distances']
         )
+        logger.info(f"ChromaDB search results: {results}")
         
         # Accessing the inner lists of results. Chromadb supports batch queries
         documents = results['documents'][0]
@@ -140,15 +150,17 @@ class HybridRetriever:
         semantic_scores = self._normalize_scores(
             [1 - d for d in results['distances'][0]]
         )
+        logger.info(f"Semantic scores: {semantic_scores}")
         
         # Get keyword search scores
         keyword_scores = self._get_keyword_scores(query, documents)
-        
+        logger.info(f"Keyword scores: {keyword_scores}")
         # Combine scores
         combined_scores = [
             (self.cfg.hybrid_retriever.semantic_weight * ss + self.cfg.hybrid_retriever.keyword_weight * ks)
             for ss, ks in zip(semantic_scores, keyword_scores)
         ]
+        logger.info(f"Combined scores: {combined_scores}")
         
         # Sort results by combined score
         search_results = []

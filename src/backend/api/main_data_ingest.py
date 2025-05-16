@@ -1,13 +1,14 @@
 
 """To run:
 python -m src.backend.api.main_data_ingest
-Interact via SwaggerUi: http://localhost:8000/ingest/docs
+Interact via SwaggerUi: http://localhost:8001/ingest/docs
 Check health: curl http://localhost:8001/health
 """
 import os
 from datetime import datetime
 import logging
 import uvicorn
+from typing import List
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from hydra import initialize, compose
@@ -16,7 +17,6 @@ from src.backend.utils.logging import setup_logging
 from src.backend.dataloaders.local_doc_loader import load_local_doc
 from src.backend.dataprocessor.chunker import batch_chunk_doc
 from src.backend.dataprocessor.embedder import embed_doc
-from src.backend.utils.settings import SETTINGS
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -61,26 +61,36 @@ app.add_middleware(
 # Upload Endpoint
 # -----------------------
 @router.post("/upload_doc")
-async def upload_doc(file: UploadFile = File(...)):
+async def upload_doc(files: List[UploadFile] = File(...)):
     """Endpoint for uploading and embedding a document into ChromaDB."""
     try:
         # 1. Save the uploaded file
-        upload_dir = os.path.join(SETTINGS.DATA_DIR, "data_to_ingest")
+        upload_dir = os.path.join(cfg.data_dir, "data_to_ingest")
         os.makedirs(upload_dir, exist_ok=True)
-        saved_path = os.path.join(upload_dir, file.filename)
-        logger.info(f"Uploaded file saved to {saved_path} at {datetime.utcnow()}")
-        with open(saved_path, "wb") as f:
-            f.write(await file.read())
 
-        # 3. Load and chunk the document
-        cfg.local_doc.paths = [{"path": saved_path}]
-        loaded_docs = load_local_doc(cfg)
-        chunked_docs = batch_chunk_doc(cfg, loaded_docs)
+        all_chunked_docs = []
+        uploaded_paths = []
+        
+        for file in files:
+            saved_path = os.path.join(upload_dir, file.filename)
+            with open(saved_path, "wb") as f:
+                f.write(await file.read())
+            logger.info(f"Uploaded file saved to {saved_path}")
+            uploaded_paths.append({"path": saved_path})
 
-        # 4. Embed and store using ChromaDB
+            # 2. Load and chunk the document
+            cfg.local_doc.paths = uploaded_paths
+            loaded_docs = load_local_doc(cfg)
+            chunked_docs = batch_chunk_doc(cfg, loaded_docs)
+            all_chunked_docs.extend(chunked_docs)
+
+        # 3. Embed and store using ChromaDB
         await embed_doc(cfg, chunked_docs)
 
-        return {"message": f"{file.filename} embedded and stored successfully."}
+        return {
+            "message": f"{len(files)} files embedded and stored successfully.",
+            "filenames": [file.filename for file in files],
+        }
     
     except Exception as e:
         logger.error(f"Upload failed: {str(e)}", exc_info=True)

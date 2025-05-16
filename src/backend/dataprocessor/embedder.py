@@ -15,21 +15,27 @@ logger = logging.getLogger(__name__)
 
 
 class Embedder:
-    def __init__(
-        self, cfg, chroma_host: str = "localhost", chroma_port: int = 8000
+    def __init__(self, cfg, client):
+        self.client = client
+        self.collection = None
+        self.prompts = cfg.extract_metadata
+        self.embedding_fn = None
+        self.agent = Agent(
+            'openai:gpt-4.1-mini',
+            result_type=EmbeddingMetadata,
+            system_prompt=self.prompts['system_prompt']
+        )
+
+    @classmethod
+    async def create_chromadb_client(
+        cls, cfg, chroma_host="localhost", chroma_port=8000
     ):
-        self.client = chromadb.HttpClient(
+        client = await chromadb.AsyncHttpClient(
             host=chroma_host,
             port=chroma_port,
             settings=Settings(anonymized_telemetry=False)
         )
-        self.collection = None
-        self.prompts = cfg.extract_metadata
-        self.agent = Agent(
-            'openai:gpt-4o-mini',
-            result_type=EmbeddingMetadata,
-            system_prompt=self.prompts['system_prompt']
-        )
+        return cls(cfg, client)
 
     def _create_embedding_function(
         self,
@@ -44,20 +50,18 @@ class Embedder:
             )
         raise ValueError(f"Unsupported embedding provider: {provider}")
 
-    def _create_collection(
+    async def _create_collection(
         self,
         collection_name: str,
         similarity_metric: str,
         metadata: Optional[Dict] = None,
-        embedding_function: Optional[embedding_functions.EmbeddingFunction] = None
     ):
         if metadata is None:
             metadata = {"hnsw:space": similarity_metric}
             
-        return self.client.get_or_create_collection(
+        return await self.client.get_or_create_collection(
             name=collection_name,
-            metadata=metadata,
-            embedding_function=embedding_function
+            metadata=metadata
         )
     
     async def _extract_metadata(self, content: str) -> EmbeddingMetadata:
@@ -87,6 +91,9 @@ class Embedder:
         for doc in processed_docs:
             if doc['type'] == 'chunked':
                 chunk_metadatas = []
+                chunk_embeddings = []
+                chunk_documents = []
+                chunk_ids = []
                 # For chunked documents, store each chunk with its embedding
                 # Use add method, upsert might overwrite existing embeddings
                 for chunk in doc['chunks']:
@@ -101,16 +108,23 @@ class Embedder:
                         'doc_id': doc.get('doc_id', str(uuid.uuid4()))
                     }
                     metadata = self._convert_metadata_str(enhanced_metadata)
+                    embedding = self.embedding_fn(chunk['content'])
+                    if isinstance(embedding, list) and len(embedding) == 1:
+                        embedding = embedding[0]  # Extract the numpy array from the list
+                    chunk_embeddings.append(embedding)
+                    chunk_documents.append(chunk['content'])
                     chunk_metadatas.append(metadata)
+                    chunk_ids.append(str(uuid.uuid4()))
                     logger.info(f"Storing chunk with metadata: {metadata}")
-                self.collection.add(
-                    documents=[chunk['content'] for chunk in doc['chunks']],
+                await self.collection.add(
+                    documents=chunk_documents,
+                    embeddings=chunk_embeddings,
                     metadatas=chunk_metadatas,
-                    ids=[str(uuid.uuid4()) for _ in doc['chunks']]
+                    ids=chunk_ids
                 )
             else:
                 # For full documents, store without embeddings
-                self.client.get_or_create_collection(
+                await self.client.get_or_create_collection(
                     name=f"{self.collection.name}_full",
                     metadata={"type": "full_documents"}
                 ).add(
@@ -121,16 +135,19 @@ class Embedder:
 
 async def embed_doc(cfg: DictConfig, chunked_docs: List[Dict]) -> None:
     logger.info("Starting document embedding process...")
-    embedder = Embedder(cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT)
+    embedder = await Embedder.create_chromadb_client(
+        cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT
+    )
     embedding_fn = embedder._create_embedding_function(
         provider=cfg.llm.provider,
         model_name=cfg.llm.embedding_model,
         api_key=SETTINGS.OPENAI_API_KEY
     )
-    embedder.collection = embedder._create_collection(
+    embedder.embedding_fn = embedding_fn
+    embedder.collection = await embedder._create_collection(
         collection_name=cfg.embedder.collection,
         similarity_metric=cfg.embedder.similarity_metric,
-        embedding_function=embedding_fn
+        # embedding_function=embedding_fn
     )
     logger.info(f"Created Collection: {embedder.collection.name}")
 
@@ -144,13 +161,13 @@ async def embed_doc(cfg: DictConfig, chunked_docs: List[Dict]) -> None:
         await embedder._store_processed_documents(chunked_docs)
         
         # Verify embeddings by checking collection count
-        collection_count = embedder.collection.count()
+        collection_count = await embedder.collection.count()
         logger.info(f"Successfully stored {collection_count}"
                     f"embeddings in collection")
         
         # Optional: Check a few random embeddings
         if collection_count > 0:
-            sample = embedder.collection.get(limit=1)
+            sample = await embedder.collection.get(limit=1)
             if sample and 'embeddings' in sample:
                 logger.info("Sample embedding verification successful")
             else:

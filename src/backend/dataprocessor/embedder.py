@@ -50,28 +50,48 @@ class Embedder:
             )
         raise ValueError(f"Unsupported embedding provider: {provider}")
 
-    async def _create_collection(
-        self,
-        collection_name: str,
-        similarity_metric: str,
-        metadata: Optional[Dict] = None,
+    async def _get_or_create_collection(
+        self, collection_name: str, similarity_metric: str
     ):
-        if metadata is None:
-            metadata = {"hnsw:space": similarity_metric}
+        """Get existing collection or create a new one"""
+        metadata = {"hnsw:space": similarity_metric}
+        
+        # Try to get collection first
+        try:
+            collection = await self.client.get_collection(
+                name=collection_name,
+                embedding_function=self.embedding_fn
+            )
+            logger.info(f"Using existing collection: {collection_name}")
+            return collection
+        except ValueError as e:
+            # Handle embedding function mismatch by recreating collection
+            if "Embedding function name mismatch" in str(e):
+                logger.warning(f"Embedding function mismatch. Recreating collection: {collection_name}")
+                try:
+                    await self.client.delete_collection(collection_name)
+                except Exception:
+                    pass  # Collection might not exist, ignore error
             
-        return await self.client.get_or_create_collection(
-            name=collection_name,
-            metadata=metadata
-        )
+            # Create new collection with embedding function
+            return await self.client.create_collection(
+                name=collection_name,
+                embedding_function=self.embedding_fn,
+                metadata=metadata
+            )
+        except Exception as e:
+            logger.warning(f"Collection not found, creating new: {e}")
+            return await self.client.create_collection(
+                name=collection_name,
+                embedding_function=self.embedding_fn,
+                metadata=metadata
+            )
     
     async def _extract_metadata(self, content: str) -> EmbeddingMetadata:
-        logger.info("Start Extracting metadata")
         result = await self.agent.run(
             self.prompts['user_prompt'].format(content=content)
         )
-        metadata = result.data
-        logger.info(f"Extracted metadata: {metadata}")
-        return metadata
+        return result.data
 
     def _convert_metadata_str(self, metadata: Dict) -> Dict:
         return {
@@ -83,6 +103,37 @@ class Embedder:
             for key, value in metadata.items()
         }
 
+    async def _store_chunk(self, chunk, doc_id, total_chunks):
+        """Process and store a single chunk."""
+        # Extract metadata
+        extracted_metadata = await self._extract_metadata(chunk['content'])
+        
+        # Prepare metadata
+        enhanced_metadata = {
+            **chunk['metadata'],
+            **extracted_metadata.model_dump(),
+            'chunk_type': 'partial',
+            'total_chunks': total_chunks,
+            'doc_id': doc_id
+        }
+        metadata = self._convert_metadata_str(enhanced_metadata)
+        
+        # Get embedding
+        embedding = self.embedding_fn(chunk['content'])
+        # Fix nested list issue if present
+        if isinstance(embedding, list) and len(embedding) == 1:
+            embedding = embedding[0]
+            
+        # Store in collection
+        await self.collection.add(
+            documents=[chunk['content']],
+            embeddings=[embedding],
+            metadatas=[metadata],
+            ids=[str(uuid.uuid4())]
+        )
+        
+        return metadata
+
     async def _store_processed_documents(self, processed_docs: List[Dict]):
         """
         Store processed documents in ChromaDB.
@@ -90,38 +141,20 @@ class Embedder:
         """
         for doc in processed_docs:
             if doc['type'] == 'chunked':
-                chunk_metadatas = []
-                chunk_embeddings = []
-                chunk_documents = []
-                chunk_ids = []
-                # For chunked documents, store each chunk with its embedding
-                # Use add method, upsert might overwrite existing embeddings
-                for chunk in doc['chunks']:
-                    extracted_metadata = await self._extract_metadata(
-                        chunk['content']
-                    )
-                    enhanced_metadata = {
-                        **chunk['metadata'],
-                        **extracted_metadata.model_dump(),
-                        'chunk_type': 'partial',
-                        'total_chunks': doc['num_chunks'],
-                        'doc_id': doc.get('doc_id', str(uuid.uuid4()))
-                    }
-                    metadata = self._convert_metadata_str(enhanced_metadata)
-                    embedding = self.embedding_fn(chunk['content'])
-                    if isinstance(embedding, list) and len(embedding) == 1:
-                        embedding = embedding[0]  # Extract the numpy array from the list
-                    chunk_embeddings.append(embedding)
-                    chunk_documents.append(chunk['content'])
-                    chunk_metadatas.append(metadata)
-                    chunk_ids.append(str(uuid.uuid4()))
-                    logger.info(f"Storing chunk with metadata: {metadata}")
-                await self.collection.add(
-                    documents=chunk_documents,
-                    embeddings=chunk_embeddings,
-                    metadatas=chunk_metadatas,
-                    ids=chunk_ids
-                )
+                # Get doc ID
+                doc_id = doc.get('doc_id', str(uuid.uuid4()))
+                total_chunks = doc['num_chunks']
+                batch_size = 5
+                for i in range(0, len(doc['chunks']), batch_size):
+                    batch = doc['chunks'][i:i+batch_size]
+                    for chunk in batch:
+                        try:
+                            metadata = await self._store_chunk(
+                                chunk, doc_id, total_chunks)
+                            logger.info(f"Stored chunk with ID: {chunk.get('id', 'generated')}")
+                            logger.info(f"Metadata: {metadata}")
+                        except Exception as e:
+                            logger.error(f"Error storing chunk: {str(e)}")
             else:
                 # For full documents, store without embeddings
                 await self.client.get_or_create_collection(
@@ -138,16 +171,14 @@ async def embed_doc(cfg: DictConfig, chunked_docs: List[Dict]) -> None:
     embedder = await Embedder.create_chromadb_client(
         cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT
     )
-    embedding_fn = embedder._create_embedding_function(
+    embedder.embedding_fn = embedder._create_embedding_function(
         provider=cfg.llm.provider,
         model_name=cfg.llm.embedding_model,
         api_key=SETTINGS.OPENAI_API_KEY
     )
-    embedder.embedding_fn = embedding_fn
-    embedder.collection = await embedder._create_collection(
+    embedder.collection = await embedder._get_or_create_collection(
         collection_name=cfg.embedder.collection,
-        similarity_metric=cfg.embedder.similarity_metric,
-        # embedding_function=embedding_fn
+        similarity_metric=cfg.embedder.similarity_metric
     )
     logger.info(f"Created Collection: {embedder.collection.name}")
 

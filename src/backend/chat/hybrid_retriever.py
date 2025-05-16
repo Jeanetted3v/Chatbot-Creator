@@ -141,7 +141,6 @@ class HybridRetriever:
             where=filter_conditions,
             include=['documents', 'metadatas', 'distances']
         )
-        logger.info(f"ChromaDB search results: {results}")
         
         # Accessing the inner lists of results. Chromadb supports batch queries
         documents = results['documents'][0]
@@ -150,18 +149,13 @@ class HybridRetriever:
         semantic_scores = self._normalize_scores(
             [1 - d for d in results['distances'][0]]
         )
-        logger.info(f"Semantic scores: {semantic_scores}")
-        
         # Get keyword search scores
         keyword_scores = self._get_keyword_scores(query, documents)
-        logger.info(f"Keyword scores: {keyword_scores}")
         # Combine scores
         combined_scores = [
             (self.cfg.hybrid_retriever.semantic_weight * ss + self.cfg.hybrid_retriever.keyword_weight * ks)
             for ss, ks in zip(semantic_scores, keyword_scores)
         ]
-        logger.info(f"Combined scores: {combined_scores}")
-        
         # Sort results by combined score
         search_results = []
         for doc, meta, score in zip(documents, metadatas, combined_scores):
@@ -172,7 +166,6 @@ class HybridRetriever:
                 keywords=keywords,
                 related_topics=topics
             )
-
             search_results.append(
                 SearchResult(
                     content=doc,

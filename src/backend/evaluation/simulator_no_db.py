@@ -18,8 +18,12 @@ from pydantic_ai import Agent
 from src.backend.utils.logging import setup_logging
 from src.backend.utils.llm_model_factory import LLMModelFactory
 from src.backend.chat.hybrid_retriever import HybridRetriever
-from src.backend.dataloaders.local_doc_loader import load_local_doc, LoadedUnstructuredDocument, LoadedStructuredDocument
-
+from src.backend.utils.settings import SETTINGS
+from src.backend.dataloaders.local_doc_loader import (
+    load_local_doc,
+    LoadedUnstructuredDocument,
+    LoadedStructuredDocument
+)
 
 logger = logging.getLogger(__name__)
 logger.info('Setting up logging configuration.')
@@ -80,9 +84,9 @@ class AllLLMGroundTruth(BaseModel):
 
 
 class ChatBotSimulator:
-    def __init__(self, cfg: DictConfig):
+    def __init__(self, cfg: DictConfig, hybrid_retriever: HybridRetriever):
         self.cfg = cfg
-        self.hybrid_retriever = HybridRetriever(self.cfg)
+        self.hybrid_retriever = hybrid_retriever
         self.documents = load_local_doc(cfg)
         self.rag_context = self.prepare_rag_context()
         chatbot_model_config = dict(self.cfg.simulator.chatbot_llm)
@@ -114,6 +118,14 @@ class ChatBotSimulator:
             result_type=AllLLMGroundTruth,
             system_prompt=self.cfg.llm_gt_prompts.system_prompt
         )
+
+    @classmethod
+    async def create(cls, cfg: DictConfig):
+        # call your async constructor here
+        retriever = await HybridRetriever.create_chromadb_client(
+            cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT
+        )
+        return cls(cfg, retriever)
 
     def prepare_rag_context(self) -> str:
         """Prepare RAG context from loaded documents"""
@@ -314,7 +326,7 @@ class ChatBotSimulator:
 )
 def main(cfg) -> None:
     async def async_main():
-        simulator = ChatBotSimulator(cfg)
+        simulator = ChatBotSimulator.create(cfg)
         await simulator.run_simulations(cfg.simulator.num_simulations)
     asyncio.run(async_main())
 

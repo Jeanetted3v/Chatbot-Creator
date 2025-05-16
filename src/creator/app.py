@@ -17,11 +17,9 @@ import logging
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.backend.utils.logging import setup_logging
-from src.creator.chatbot_creator import ChatbotCreator
 from src.creator.utils.utils import state as app_state
 from src.creator.utils.utils import load_config
 from src.creator.utils.css import css
-
 from src.creator.services.config_service import ConfigService
 from src.creator.services.doc_service import DocumentService
 from src.creator.services.prompt_creation_service import PromptCreationService
@@ -34,15 +32,21 @@ logger = logging.getLogger(__name__)
 setup_logging()
 
 
+# Utility wrapper for async
+def run_async(coro):
+    return asyncio.run(coro)
+
+
 config_service = ConfigService(cfg)
-simulation_service = SimulationService(config_service)
+simulation_service = run_async(
+    SimulationService.create(config_service)
+)
 doc_service = DocumentService(config_service, simulation_service)
 prompt_creation_service = PromptCreationService(config_service)
 prompt_optimization_service = PromptOptimizationService(
     config_service,
     prompt_creation_service
 )
-simulation_service = SimulationService(config_service)
 
 # creator = ChatbotCreator(cfg)
 # Initialize state
@@ -52,11 +56,6 @@ if "mode" not in app_state:
 # Initialize "regeneration_count" if it doesn't exist
 if "regeneration_count" not in app_state:
     app_state["regeneration_count"] = 0
-
-
-# Utility wrapper for async
-def run_async(coro):
-    return asyncio.run(coro)
 
 
 def toggle_mode():

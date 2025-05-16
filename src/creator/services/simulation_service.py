@@ -12,18 +12,19 @@ logger = logging.getLogger(__name__)
 class SimulationService:
     """Service for generating simulated conversations with the chatbot"""
     
-    def __init__(self, config_service):
+    def __init__(self, config_service, simulator: ChatBotSimulator):
         self.config_service = config_service
-        self.simulator = None
-        self._init_simulator()
+        self.simulator = simulator
     
-    def _init_simulator(self):
-        """Initialize the simulator with current configuration"""
-        cfg = self.config_service.get_config()
-        self.simulator = ChatBotSimulator(cfg)
+    @classmethod
+    async def create(cls, config_service):
+        cfg = config_service.get_config()
+        # build the simulator properly
+        simulator = await ChatBotSimulator.create(cfg)
+        return cls(config_service, simulator)
     
     async def generate_simulations(
-        self, 
+        self,
         prompts: Optional[Dict[str, str]] = None,
         num_simulations: int = None
     ) -> List[dict]:

@@ -40,14 +40,14 @@ class QueryHandler:
         self.reasoning_agent = Agent(
             model=reasoning_model,
             result_type=ReasongingResult,
-            system_prompt=self.cfg.query_handler_prompts_final.reasoning_agent['sys_prompt']
+            system_prompt=self.cfg.query_handler_prompts.reasoning_agent['sys_prompt']
         )
         response_model_config = dict(self.cfg.response)
         response_model = LLMModelFactory.create_model(response_model_config)
         self.response_agent = Agent(
             model=response_model,
             result_type=ResponseResult,
-            system_prompt=self.cfg.query_handler_prompts_final.response_agent['sys_prompt']
+            system_prompt=self.cfg.query_handler_prompts.response_agent['sys_prompt']
 
         )
     
@@ -199,7 +199,7 @@ class QueryHandler:
             msg_history = await chat_history.format_history_for_prompt()
 
             reasoning_result = await self.reasoning_agent.run(
-                self.cfg.query_handler_prompts_final.reasoning_agent['user_prompt'].format(
+                self.cfg.query_handler_prompts.reasoning_agent['user_prompt'].format(
                     query=query,
                     message_history=msg_history,
                     competitors=self.cfg.guardrails.competitors,
@@ -218,7 +218,7 @@ class QueryHandler:
                 all_search_results = []
 
             result = await self.response_agent.run(
-                self.cfg.query_handler_prompts_final.response_agent['user_prompt'].format(
+                self.cfg.query_handler_prompts.response_agent['user_prompt'].format(
                     query=query,
                     message_history=msg_history,
                     search_results=all_search_results,

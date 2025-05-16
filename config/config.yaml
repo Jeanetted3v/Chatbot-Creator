@@ -2,7 +2,6 @@ data_dir: ./data
 csv_path: ./data/excel_syn_data.csv
 
 hybrid_retriever:
-  persist_dir: ./data/embeddings
   collection: syn_data
   semantic_weight: 0.7
   keyword_weight: 0.3
@@ -94,7 +93,7 @@ defaults:
   - _self_ 
   - sentiment_analyzer_prompts
   - human_agent_prompts
-  - query_handler_prompts
+  - query_handler_prompts_final
   - simulator_prompts
   - llm_gt_prompts
   - creator
@@ -103,5 +102,6 @@ defaults:
   - reasoning_agent_template
   - reasoning_creator_prompts
   - prompt_validator_prompts 
-  - prompt_optimizer_prompts 
+  - prompt_optimizer_prompts
+  - query_handler_prompts
 

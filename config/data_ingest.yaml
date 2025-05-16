@@ -16,9 +16,9 @@ gdrive:
 
 local_doc:
   paths:
-    - path: ./data/data_to_ingest/syn_data.xlsx
-    - path: ./data/data_to_ingest/rag_qna.pdf
-    - path: ./data/data_to_ingest/translated_crawl.txt
+    # - path: ./data/data_to_ingest/syn_data.xlsx
+    # - path: ./data/data_to_ingest/rag_qna.pdf
+    # - path: ./data/data_to_ingest/translated_crawl.txt
   csv_dir: ./data/csv
   rows_threshold: 2  # Default is 50, Set low for testing RAG
 

@@ -38,9 +38,15 @@ def run_async(coro):
 
 
 config_service = ConfigService(cfg)
-simulation_service = run_async(
-    SimulationService.create(config_service)
-)
+try:
+    # Create a new event loop to avoid conflicts
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    simulation_service = loop.run_until_complete(SimulationService.create(config_service))
+except Exception as e:
+    logger.error(f"Error creating simulation service: {e}")
+    # Provide a fallback or reraise as needed
+    raise e
 doc_service = DocumentService(config_service, simulation_service)
 prompt_creation_service = PromptCreationService(config_service)
 prompt_optimization_service = PromptOptimizationService(
@@ -481,7 +487,7 @@ hr {
   background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0));
 }
 """
-
+app_stop_event = asyncio.Event()
 # Main Gradio App
 with gr.Blocks(
     title="🤖 Interactive Prompt Creator",
@@ -492,6 +498,7 @@ with gr.Blocks(
         font=[gr.themes.GoogleFont("Inter"), "system-ui", "sans-serif"]
     )
 ) as demo:
+    demo.stop_event = app_stop_event
     # Application state (hidden)
     current_screen = gr.State(value=1)
     # Screen 1: Initial Setup with Mode Toggle
@@ -798,5 +805,14 @@ with gr.Blocks(
     )
 
 
-# Launch the app
-demo.launch(server_name="0.0.0.0", server_port=8080)
+async def shutdown():
+    if hasattr(demo, 'stop_event'):
+        demo.stop_event.set()
+
+
+if __name__ == "__main__":
+    try:
+        demo.launch(server_name="0.0.0.0", server_port=8080)
+    finally:
+        # Try to ensure clean shutdown
+        asyncio.run(shutdown())

@@ -10,7 +10,7 @@ hydra-core
 langchain
 langchain_experimental
 pymongo
-# chromadb>=1.0.7
+chromadb>=1.0.7
 chromadb-client>=1.0.7
 pydantic
 pydantic-settings

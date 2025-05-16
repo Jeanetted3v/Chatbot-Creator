@@ -9,8 +9,7 @@ An application that is able to create and optimize chatbot with users' instructi
 
 ## TODO
 1. Make vector store configurable with Chromadb, Weaviate, PostgreSQL
-2. Deploy main app on Render and try GCP as well
-
+2. Deploy main app on AWS
 
 
 ## Reference & Thoughts

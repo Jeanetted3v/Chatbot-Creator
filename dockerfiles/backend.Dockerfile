@@ -15,4 +15,4 @@ EXPOSE 8080
 
 ENV PYTHONPATH="${PYTHONPATH}:/app"
 
-CMD ["python", "-m", "src.backend.api.main"]
+CMD ["uvicorn", "src.backend.api.main:app", "--host", "0.0.0.0", "--port", "8080"]

@@ -92,7 +92,7 @@ def main() -> None:
     uvicorn.run(
         "src.backend.api.main:app",
         host="0.0.0.0",
-        port=8000,
+        port=8080,
         reload=cfg.api.reload if hasattr(cfg.api, "reload") else False,
     )
 

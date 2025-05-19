@@ -11,7 +11,7 @@ COPY config/ /app/config/
 COPY src/backend/ /app/src/backend/
 COPY src/__init__.py /app/src/__init__.py
 
-EXPOSE 8000
+EXPOSE 8080
 
 ENV PYTHONPATH="${PYTHONPATH}:/app"
 

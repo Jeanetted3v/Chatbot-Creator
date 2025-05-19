@@ -68,7 +68,6 @@ atlassian-ide-plugin.xml
 # C extensions
 *.so
 
-!.dockerignore
 
 # Python template
 # Byte-compiled / optimized / DLL files

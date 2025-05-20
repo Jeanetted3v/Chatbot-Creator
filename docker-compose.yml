@@ -1,4 +1,4 @@
-name: edu_chatbot
+name: edu_chatbot 
 
 services:
   data-ingest:

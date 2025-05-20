@@ -94,7 +94,7 @@ def main() -> None:
         host="0.0.0.0",
         port=8080,
         reload=cfg.api.reload if hasattr(cfg.api, "reload") else False,
-    ) 
+    )
 
 
 if __name__ == "__main__":

@@ -16,4 +16,4 @@ An application that is able to create and optimize chatbot with users' instructi
 
 ## Reference & Thoughts
 * [MARK: Memory Augmented Refinement of Knowledge](https://arxiv.org/abs/2505.05177)
-* 
+* To read: [LLMS GET LOST IN MULTI-TURN CONVERSATION](https://arxiv.org/pdf/2505.06120)

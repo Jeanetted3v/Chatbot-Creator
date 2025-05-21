@@ -1,7 +1,6 @@
 """To test run: python -m src.backend.api.main_data_ingest
 Interact via SwaggerUi: http://localhost:8000/chat/docs
 """
-
 import logging
 import uvicorn
 from fastapi import FastAPI
@@ -53,7 +52,7 @@ app = FastAPI(
     version="1.0",
     docs_url="/chat/docs",
     openapi_url="/chat/openapi.json",
-    lifespan=lifespan,
+    # lifespan=lifespan,
 )
 
 app.add_middleware(

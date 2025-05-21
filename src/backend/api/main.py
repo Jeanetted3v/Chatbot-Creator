@@ -15,7 +15,7 @@ from src.backend.api import websocket_router
 setup_logging()
 logger = logging.getLogger(__name__)
 cfg = get_config()
-ORIGINS = ["*"]
+ORIGINS = "https://chatbot-frontend-1041719358896.asia-south1.run.app"
 
 
 @asynccontextmanager

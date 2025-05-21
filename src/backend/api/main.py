@@ -52,7 +52,7 @@ app = FastAPI(
     version="1.0",
     docs_url="/chat/docs",
     openapi_url="/chat/openapi.json",
-    # lifespan=lifespan,
+    lifespan=lifespan,
 )
 
 app.add_middleware(

@@ -5,18 +5,18 @@ Interact via SwaggerUi: http://localhost:8001/ingest/docs
 Check health: curl http://localhost:8001/health
 """
 import os
-from datetime import datetime
 import logging
 import uvicorn
 from typing import List
-from fastapi import FastAPI
+from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 from hydra import initialize, compose
 from fastapi import APIRouter, UploadFile, File
 from src.backend.utils.logging import setup_logging
 from src.backend.dataloaders.local_doc_loader import load_local_doc
 from src.backend.dataprocessor.chunker import batch_chunk_doc
-from src.backend.dataprocessor.embedder import embed_doc
+from src.backend.dataprocessor.embedder import embed_doc, Embedder
+from src.backend.utils.settings import SETTINGS
 
 setup_logging()
 logger = logging.getLogger(__name__)
@@ -94,6 +94,25 @@ async def upload_doc(files: List[UploadFile] = File(...)):
     
     except Exception as e:
         logger.error(f"Upload failed: {str(e)}", exc_info=True)
+        return {"error": str(e)}
+
+
+# -----------------------
+# Delete Colleciton Endpoint
+# -----------------------
+@router.delete("/delete_collection")
+async def delete_collection(
+    name: str = Query(..., description="Collection name to delete")
+):
+    """Delete a ChromaDB collection by name."""
+    try:
+        embedder = await Embedder.create_chromadb_client(
+            cfg, SETTINGS.CHROMA_HOST, SETTINGS.CHROMA_PORT
+        )
+        await embedder.delete_collection_by_name(name)
+        return {"message": f"Collection '{name}' deleted successfully."}
+    except Exception as e:
+        logger.error(f"Collection delete failed: {str(e)}", exc_info=True)
         return {"error": str(e)}
 
 

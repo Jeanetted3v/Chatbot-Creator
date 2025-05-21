@@ -165,6 +165,15 @@ class Embedder:
                     ids=[str(uuid.uuid4())]
                 )
 
+    async def delete_collection_by_collection(self, collection_name: str):
+        try:
+            await self.client.delete_collection(name=collection_name)
+            logger.info(f"Deleted collection: {collection_name}")
+        except Exception as e:
+            logger.error(f"Failed to delete collection '{collection_name}': "
+                         f"{str(e)}")
+            raise e
+
 
 async def embed_doc(cfg: DictConfig, chunked_docs: List[Dict]) -> None:
     logger.info("Starting document embedding process...")

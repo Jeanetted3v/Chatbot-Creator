@@ -15,7 +15,6 @@ from src.backend.api import websocket_router
 setup_logging()
 logger = logging.getLogger(__name__)
 cfg = get_config()
-ORIGINS = ["https://chatbot-frontend-1041719358896.asia-south1.run.app"]
 
 
 @asynccontextmanager
@@ -55,9 +54,10 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+ORIGINS = ["https://chatbot-frontend-1041719358896.asia-south1.run.app"]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ORIGINS,   # change to ORIGINS in production
+    allow_origins=ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

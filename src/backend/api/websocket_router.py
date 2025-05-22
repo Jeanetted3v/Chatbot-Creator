@@ -16,7 +16,6 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-
 async def handle_customer_message(
     services: ServiceContainer,
     session_id: str,
@@ -342,7 +341,8 @@ async def websocket_endpoint(
             communication.
     """
     try:
-        logger.info(f"WebSocket connection attempt - session: {session_id}, client: {client_type}")
+        logger.info(f"WebSocket connection attempt - session: {session_id}, "
+                    f"client: {client_type}")
         await websocket.accept()
         await manager.connect(websocket, session_id, client_type)
         # Get customer_id from query parameters

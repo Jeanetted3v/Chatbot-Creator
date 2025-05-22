@@ -1,6 +1,11 @@
 FROM node:22-alpine AS build
 
 WORKDIR /app
+
+# Inject environment variables
+ARG NEXT_PUBLIC_API_URL
+ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
+
 # Set environment
 ENV NODE_ENV=production
 # Copy package files
@@ -11,10 +16,6 @@ RUN npm ci
 
 # Copy all frontend files
 COPY src/frontend/ ./
-
-
-ARG NEXT_PUBLIC_API_URL
-ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
 # Create public directory if it doesn't exist
 RUN mkdir -p public

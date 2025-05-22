@@ -21,6 +21,7 @@ export default function ChatDemoPage() {
       try {
         setLoading(true);
         const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+        console.log('Using API_URL:', API_URL);
         const sessionResponse = await fetch(`${API_URL}/customer/session/new`, {
           method: 'POST',
           headers: {

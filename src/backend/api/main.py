@@ -69,6 +69,11 @@ app.include_router(utils_router.router, prefix="/utils", tags=["utils"])
 app.include_router(websocket_router.router, prefix="/ws", tags=["websocket"])
 
 
+@app.options("/test-cors")
+async def test_cors():
+    return {"message": "CORS test OK"}
+
+
 @app.get("/")
 @app.head("/")
 async def root():

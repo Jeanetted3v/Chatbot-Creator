@@ -1,6 +1,5 @@
 import logging
 from datetime import datetime
-from uuid import uuid4
 from fastapi import APIRouter, HTTPException, Depends
 
 from src.backend.models.api import MessageRequest, MessageResponse
@@ -57,21 +56,22 @@ async def customer_send_message(
         
         # If the session was transferred to human but not fully processed,
         # handle the takeover to ensure proper notification and logging
-        if (session.current_agent == AgentType.HUMAN and 
-            "human agent" in response.lower() and 
-            "transferred" in response.lower()):
+        if (session.current_agent == AgentType.HUMAN and
+            "human agent" in response.lower() and
+            "transferred" in response.lower()
+        ):
             
             # Use the shared takeover function
             await human_takeover(
                 session_id=session_id,
-                reason=ToggleReason.SENTIMENT_BASED,  # This could also be CUSTOMER_REQUEST depending on your logic
+                reason=ToggleReason.SENTIMENT_BASED,
                 services=services
             )
         
         # Determine the response role based on current agent
         response_role = (
-            MessageRole.HUMAN_AGENT 
-            if session.current_agent == AgentType.HUMAN 
+            MessageRole.HUMAN_AGENT
+            if session.current_agent == AgentType.HUMAN
             else MessageRole.BOT
         )
         

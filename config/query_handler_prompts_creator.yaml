@@ -1,4 +1,4 @@
-query_handler_prompts:
+query_handler_prompts_creator:
   reasoning_agent:
     sys_prompt: |
     user_prompt: |

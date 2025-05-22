@@ -93,7 +93,7 @@ defaults:
   - _self_ 
   - sentiment_analyzer_prompts
   - human_agent_prompts
-  - query_handler_prompts_final
+  - query_handler_prompts_creator
   - simulator_prompts
   - llm_gt_prompts
   - creator

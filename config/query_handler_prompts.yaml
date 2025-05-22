@@ -1,4 +1,4 @@
-query_handler_prompts_final:
+query_handler_prompts:
   reasoning_agent:
     sys_prompt: |
       <OBJECTIVE_AND_PERSONA>
